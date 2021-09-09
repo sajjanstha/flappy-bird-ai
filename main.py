@@ -178,6 +178,9 @@ def draw_window(win, birds, pipes, base, score):
         bird.draw(win)
     pygame.display.update()
 
+def get_pipe_separation():
+    return random.randrange(250, 400)    
+
 def main(genomes, config):
     nets = []
     ge = []
@@ -191,7 +194,7 @@ def main(genomes, config):
         ge.append(g)
 
     base = Base(WIN_HEIGHT-80)
-    pipes = [Pipe(600), Pipe(600+PIPE_SEPARATION)]
+    pipes = [Pipe(600), Pipe(600+350)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
 
@@ -200,6 +203,7 @@ def main(genomes, config):
     run = True
     while  run:
         clock.tick(30)
+        current_pipe_separation = get_pipe_separation()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -223,7 +227,6 @@ def main(genomes, config):
             if output[0] > 0.5:
                 bird.jump()
 
-        # bird.move()
         add_pipe = False
         rem = []
         for pipe in pipes:
@@ -247,7 +250,7 @@ def main(genomes, config):
             score += 1
             for g in ge:
                 g.fitness += 5
-            pipes.append(Pipe(pipes[-1].x + PIPE_SEPARATION))
+            pipes.append(Pipe(pipes[-1].x + current_pipe_separation))
 
         for r in rem:
             pipes.remove(r)   

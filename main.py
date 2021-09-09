@@ -4,6 +4,7 @@ import random
 import time
 import os
 from pygame import transform
+from pygame.constants import K_SPACE
 pygame.font.init()
 
 WIN_WIDTH = 800
@@ -34,6 +35,7 @@ class Bird:
     MAX_ROTATION = 25
     ROT_VEL = 20
     ANIMATION_TIME = 5
+    JUMP_VELOCITY = -8
 
     def __init__(self, x, y):
         self.x = x
@@ -46,7 +48,7 @@ class Bird:
         self.img = self.IMGS[0]
 
     def jump(self):
-        self.vel = -10.5
+        self.vel = self.JUMP_VELOCITY
         self.tick_count = 0
         self.height = self.y
 
@@ -97,7 +99,7 @@ class Bird:
         return pygame.mask.from_surface(self.img)
 
 class Pipe:
-    GAP = 160
+    GAP = 190
     VEL = 5
 
     def __init__(self, x):
@@ -207,8 +209,12 @@ def main(birds):
             run = False
             break
 
+        keys_pressed = pygame.key.get_pressed()    
         for x, bird in enumerate(birds):
             bird.move()
+            if (keys_pressed[K_SPACE]):
+                bird.jump()
+
             # output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
 
             # if output[0] > 0.5:

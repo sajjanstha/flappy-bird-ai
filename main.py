@@ -3,10 +3,12 @@ import neat
 import random
 import time
 import os
+from pygame import transform
 pygame.font.init()
 
-WIN_WIDTH = 500
-WIN_HEIGHT = 800
+WIN_WIDTH = 800
+WIN_HEIGHT = 900
+PIPE_SEPARATION = 350
 
 BIRD_IMGS = [
     pygame.transform.scale2x(pygame.image.load(
@@ -19,10 +21,10 @@ BIRD_IMGS = [
 
 PIPE_IMG = pygame.transform.scale2x(pygame.image.load(
     os.path.join('imgs', 'pipe.png')))
-BASE_IMG = pygame.transform.scale2x(pygame.image.load(
-    os.path.join('imgs', 'base.png')))
-BG_IMG = pygame.transform.scale2x(pygame.image.load(
-    os.path.join('imgs', 'bg.png')))
+BASE_IMG = transform.scale(pygame.image.load(
+    os.path.join('imgs', 'base.png')), (WIN_WIDTH, 265))
+BG_IMG = transform.scale(pygame.image.load(
+    os.path.join('imgs', 'bg.png')), (WIN_WIDTH, WIN_HEIGHT))
 
 STAT_FONT = pygame.font.SysFont("comicsans", 50)     
 
@@ -110,7 +112,7 @@ class Pipe:
         self.set_height()
 
     def set_height(self):
-        self.height = random.randrange(50, 450)
+        self.height = random.randrange(50, 500)
         self.top = self.height - self.PIPE_TOP.get_height()
         self.bottom = self.height + self.GAP
 
@@ -188,8 +190,8 @@ def main(genomes, config):
         g.fitness = 0
         ge.append(g)
 
-    base = Base(730)
-    pipes = [Pipe(600)]
+    base = Base(WIN_HEIGHT-80)
+    pipes = [Pipe(600), Pipe(600+PIPE_SEPARATION)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
 
@@ -245,7 +247,7 @@ def main(genomes, config):
             score += 1
             for g in ge:
                 g.fitness += 5
-            pipes.append(Pipe(600))
+            pipes.append(Pipe(pipes[-1].x + PIPE_SEPARATION))
 
         for r in rem:
             pipes.remove(r)   

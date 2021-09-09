@@ -1,7 +1,5 @@
 import pygame
-import neat
 import random
-import time
 import os
 from pygame import transform
 from pygame.constants import K_SPACE
@@ -178,6 +176,11 @@ def draw_window(win, birds, pipes, base, score):
 
     for bird in birds:
         bird.draw(win)
+
+    if (len(birds) == 0):
+        text = STAT_FONT.render("Game Over", 1, (255,255,255))
+        win.blit(text, ((WIN_WIDTH/2)-(text.get_width()/2), WIN_HEIGHT/2))
+
     pygame.display.update()
 
 def get_pipe_separation():
@@ -206,8 +209,9 @@ def main(birds):
             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
                 pipe_ind = 1
         else:
-            run = False
-            break
+            # run = False
+            game_over()
+            # break
 
         keys_pressed = pygame.key.get_pressed()    
         for x, bird in enumerate(birds):
@@ -250,10 +254,8 @@ def main(birds):
         base.move()
         draw_window(win, birds, pipes, base, score)
 
-    # pygame.quit()
-    # quit()
-
-# main()
+def game_over():
+    pass
 
 def run():
     birds = [Bird(230, 350)]

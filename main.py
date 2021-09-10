@@ -222,7 +222,11 @@ def draw_window(win, birds, pipes, base, score):
     pygame.display.update()
 
 def get_pipe_separation():
-    return random.randrange(250, 400)    
+    return random.randrange(250, 400)
+
+def handle_player_actions(bird, keys_pressed):
+    if (keys_pressed[K_SPACE]):
+        bird.jump()
 
 def main(birds):
     base = Base(BASE_HEIGHT)
@@ -254,16 +258,10 @@ def main(birds):
         keys_pressed = pygame.key.get_pressed()    
         for x, bird in enumerate(birds):
             bird.move()
-            # if (keys_pressed[K_SPACE]):
-            #     bird.jump()
+            # handle_player_actions(bird, keys_pressed)
 
             if bird.should_jump(pipes[pipe_ind]):
                 bird.jump()
-
-            # output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
-
-            # if output[0] > 0.5:
-            #     bird.jump()
 
         add_pipe = False
         rem = []

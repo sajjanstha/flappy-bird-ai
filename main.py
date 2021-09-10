@@ -10,7 +10,10 @@ from keras.layers import Dense, Activation
 
 pygame.font.init()
 
-TOTAL_POPULATION = 5
+TOTAL_POPULATION = 15
+valhalla = []
+highest_fitness = -1
+best_weights = []
 
 FPS = 30
 WIN_WIDTH = 800
@@ -71,6 +74,7 @@ class Bird:
         self.img_count = 0
         self.img = self.IMGS[0]
         self.brain = create_model()
+        self.fitness = 0
 
     def should_jump(self, nearest_pipe):
         bird_height = self.y
@@ -232,6 +236,7 @@ def handle_player_actions(bird, keys_pressed):
         bird.jump()
 
 def main(birds):
+    global valhalla
     base = Base(BASE_HEIGHT)
     pipes = [Pipe(600), Pipe(600+350)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
@@ -261,6 +266,7 @@ def main(birds):
         keys_pressed = pygame.key.get_pressed()    
         for x, bird in enumerate(birds):
             bird.move()
+            bird.fitness += 1
             # handle_player_actions(bird, keys_pressed)
 
             if bird.should_jump(pipes[pipe_ind]):
@@ -271,11 +277,14 @@ def main(birds):
         for pipe in pipes:
             for x, bird in enumerate(birds):
                 if pipe.collide(bird):
+                    bird.fitness -= 1
+                    valhalla.append(bird)
                     birds.pop(x)
 
                 if not pipe.passed and pipe.x < bird.x:
                     pipe.passed = True
-                    add_pipe = True    
+                    add_pipe = True
+                    bird.fitness += 5    
 
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
@@ -291,13 +300,70 @@ def main(birds):
 
         for x, bird in enumerate(birds):
             if bird.y + bird.img.get_height() >= WIN_HEIGHT-80 or bird.y < 0:
+                bird.fitness -= 1
+                valhalla.append(bird)
                 birds.pop(x)
 
         base.move()
         draw_window(win, birds, pipes, base, score)
 
+def get_the_fittest_parents():
+    global valhalla
+    parent1 = valhalla[-1]
+    parent2 = valhalla[-2]
+
+    return (parent1, parent2)
+
+def crossover_parents(parent1, parent2):
+    weight1 = parent1.brain.get_weights()
+    weight2 = parent2.brain.get_weights()
+
+    new_weight1 = weight1
+    new_weight2 = weight2
+
+    gene = random.randint(0, len(new_weight2)-1)
+
+    new_weight1[gene] = weight2[gene]
+    new_weight2[gene] = weight1[gene]
+
+    return np.asarray([new_weight1, new_weight2])
+
+def model_mutate(weights):
+    for i in range(len(weights)):
+        for j in range(len(weights[i])):
+            if( random.uniform(0,1) > .85):
+                change = random.uniform(-.5,.5)
+                weights[i][j] += change
+                
+    return weights   
+
 def game_over():
-    pass
+    global highest_fitness
+    global best_weights
+    updated = False
+    for bird in valhalla:
+        if (bird.fitness >= highest_fitness):
+            updated = True
+            highest_fitness = bird.fitness
+            best_weights = bird.brain.get_weights()
+
+    parent1, parent2 = get_the_fittest_parents()
+    new_weights = []
+    for i in range(TOTAL_POPULATION//2):
+        cross_over_weights = crossover_parents(parent1, parent2)
+        if updated == False:
+            cross_over_weights[1] = best_weights
+        new_weights.append(model_mutate(cross_over_weights[0]))
+        new_weights.append(model_mutate(cross_over_weights[1]))
+    
+    new_gen_birds = []
+    for i in range(len(new_weights)):
+        new_gen_bird = Bird(230, 350)
+        new_gen_bird.brain.set_weights(new_weights[i])
+        new_gen_birds.append(new_gen_bird)
+
+    main(new_gen_birds) 
+
 
 def run():
     birds = []

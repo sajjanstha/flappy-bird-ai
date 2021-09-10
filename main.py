@@ -1,13 +1,19 @@
+import numpy as np
 import pygame
 import random
 import os
 from pygame import transform
 from pygame.constants import K_SPACE
+from tensorflow import keras
+from keras import Sequential
+from keras.layers import Dense, Activation
+
 pygame.font.init()
 
 WIN_WIDTH = 800
 WIN_HEIGHT = 900
 PIPE_SEPARATION = 350
+BASE_HEIGHT = WIN_HEIGHT - 80
 
 BIRD_IMGS = [
     pygame.transform.scale2x(pygame.image.load(
@@ -25,7 +31,24 @@ BASE_IMG = transform.scale(pygame.image.load(
 BG_IMG = transform.scale(pygame.image.load(
     os.path.join('imgs', 'bg.png')), (WIN_WIDTH, WIN_HEIGHT))
 
-STAT_FONT = pygame.font.SysFont("comicsans", 50)     
+STAT_FONT = pygame.font.SysFont("comicsans", 50)   
+
+def create_model():
+    model = Sequential()
+    model.add(Dense(3, input_shape=(3,)))
+    model.add(Activation('relu'))
+
+    model.add(Dense(7, input_shape = (3,)))
+    model.add(Activation('relu'))
+
+    model.add(Dense(1, input_shape= (7,)))
+    model.add(Activation('sigmoid'))
+
+    model.compile(loss='mse', optimizer='adam')
+
+    return model
+
+
 
 
 class Bird:
@@ -44,6 +67,21 @@ class Bird:
         self.height = self.y
         self.img_count = 0
         self.img = self.IMGS[0]
+        self.brain = create_model()
+
+    def should_jump(self, nearest_pipe):
+        bird_height = self.y
+        vertical_distance_to_top_pipe = abs(self.y - nearest_pipe.height)
+        vertical_distance_to_bottom_pipe = abs(self.y - nearest_pipe.bottom)
+        inputs = np.asarray([
+            bird_height/BASE_HEIGHT,
+            vertical_distance_to_top_pipe/BASE_HEIGHT,
+            vertical_distance_to_bottom_pipe/BASE_HEIGHT,
+            ])
+        inputs = np.atleast_2d(inputs)
+        probability = self.brain.predict(inputs, 1)[0]
+        
+        return probability >= .5   
 
     def jump(self):
         self.vel = self.JUMP_VELOCITY
@@ -187,7 +225,7 @@ def get_pipe_separation():
     return random.randrange(250, 400)    
 
 def main(birds):
-    base = Base(WIN_HEIGHT-80)
+    base = Base(BASE_HEIGHT)
     pipes = [Pipe(600), Pipe(600+350)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
@@ -216,7 +254,10 @@ def main(birds):
         keys_pressed = pygame.key.get_pressed()    
         for x, bird in enumerate(birds):
             bird.move()
-            if (keys_pressed[K_SPACE]):
+            # if (keys_pressed[K_SPACE]):
+            #     bird.jump()
+
+            if bird.should_jump(pipes[pipe_ind]):
                 bird.jump()
 
             # output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))

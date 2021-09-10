@@ -10,6 +10,8 @@ from keras.layers import Dense, Activation
 
 pygame.font.init()
 
+TOTAL_POPULATION = 5
+
 WIN_WIDTH = 800
 WIN_HEIGHT = 900
 PIPE_SEPARATION = 350
@@ -297,7 +299,9 @@ def game_over():
     pass
 
 def run():
-    birds = [Bird(230, 350)]
+    birds = []
+    for i in range(TOTAL_POPULATION):
+        birds.append(Bird(230, 350))
     main(birds)
 
 

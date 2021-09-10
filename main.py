@@ -12,6 +12,7 @@ pygame.font.init()
 
 TOTAL_POPULATION = 5
 
+FPS = 30
 WIN_WIDTH = 800
 WIN_HEIGHT = 900
 PIPE_SEPARATION = 350
@@ -240,7 +241,7 @@ def main(birds):
 
     run = True
     while  run:
-        clock.tick(30)
+        clock.tick(FPS)
         current_pipe_separation = get_pipe_separation()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

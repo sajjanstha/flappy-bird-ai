@@ -10,15 +10,16 @@ from keras.layers import Dense, Activation
 
 pygame.font.init()
 
-TOTAL_POPULATION = 15
+TOTAL_POPULATION = 8
 valhalla = []
 highest_fitness = -1
 best_weights = []
+generation = 1
 
-FPS = 30
+FPS = 60
 WIN_WIDTH = 800
 WIN_HEIGHT = 900
-PIPE_SEPARATION = 350
+PIPE_SEPARATION = 400
 BASE_HEIGHT = WIN_HEIGHT - 80
 
 BIRD_IMGS = [
@@ -40,17 +41,25 @@ BG_IMG = transform.scale(pygame.image.load(
 STAT_FONT = pygame.font.SysFont("comicsans", 50)   
 
 def create_model():
-    model = Sequential()
-    model.add(Dense(3, input_shape=(3,)))
-    model.add(Activation('relu'))
+    # model = Sequential()
+    # model.add(Dense(3, input_shape=(3,)))
+    # model.add(Activation('relu'))
 
-    model.add(Dense(7, input_shape = (3,)))
-    model.add(Activation('relu'))
+    # model.add(Dense(7, input_shape = (3,)))
+    # model.add(Activation('relu'))
 
-    model.add(Dense(1, input_shape= (7,)))
-    model.add(Activation('sigmoid'))
+    # model.add(Dense(1, input_shape= (7,)))
+    # model.add(Activation('sigmoid'))
 
-    model.compile(loss='mse', optimizer='adam')
+    # model.compile(loss='mse', optimizer='adam')
+
+    # return model
+    model = keras.Sequential([
+        keras.layers.Dense(3, input_shape = (3,)),
+        keras.layers.Dense(7, activation="relu"),
+        keras.layers.Dense(1, activation="sigmoid")
+    ])
+    model.compile(optimizer="adam", loss="mse")
 
     return model
 
@@ -62,7 +71,7 @@ class Bird:
     MAX_ROTATION = 25
     ROT_VEL = 20
     ANIMATION_TIME = 5
-    JUMP_VELOCITY = -8
+    JUMP_VELOCITY = -10.5
 
     def __init__(self, x, y):
         self.x = x
@@ -143,7 +152,7 @@ class Bird:
 
 class Pipe:
     GAP = 190
-    VEL = 5
+    VEL = 10
 
     def __init__(self, x):
         self.x = x
@@ -209,6 +218,7 @@ class Base:
         win.blit(self.IMG, (self.x2, self.y))
 
 def draw_window(win, birds, pipes, base, score):
+    global generation
     win.blit(BG_IMG, (0, 0))
 
     for pipe in pipes:
@@ -216,6 +226,13 @@ def draw_window(win, birds, pipes, base, score):
 
     text = STAT_FONT.render("Score: "+str(score), 1, (255,255,255))
     win.blit(text, (WIN_WIDTH - 10- text.get_width(), 10))
+
+    text = STAT_FONT.render("Alive: "+str(len(birds)), 1, (255,255,255))
+    win.blit(text, (10, 10))
+
+    text = STAT_FONT.render("Gen: "+str(generation), 1, (255,255,255))
+    win.blit(text, (10, 40))
+
 
     base.draw(win)
 
@@ -229,7 +246,8 @@ def draw_window(win, birds, pipes, base, score):
     pygame.display.update()
 
 def get_pipe_separation():
-    return random.randrange(250, 400)
+    return PIPE_SEPARATION
+    # return random.randrange(400, 600)
 
 def handle_player_actions(bird, keys_pressed):
     if (keys_pressed[K_SPACE]):
@@ -238,7 +256,7 @@ def handle_player_actions(bird, keys_pressed):
 def main(birds):
     global valhalla
     base = Base(BASE_HEIGHT)
-    pipes = [Pipe(600), Pipe(600+350)]
+    pipes = [Pipe(1200), Pipe(1200+PIPE_SEPARATION)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
 
@@ -284,7 +302,7 @@ def main(birds):
                 if not pipe.passed and pipe.x < bird.x:
                     pipe.passed = True
                     add_pipe = True
-                    bird.fitness += 5    
+                    bird.fitness += 25    
 
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
@@ -309,10 +327,18 @@ def main(birds):
 
 def get_the_fittest_parents():
     global valhalla
-    parent1 = valhalla[-1]
-    parent2 = valhalla[-2]
+    parent1 = random.randint(0,TOTAL_POPULATION-1)
+    parent2 = random.randint(0,TOTAL_POPULATION-1)
+    for i in range(TOTAL_POPULATION):
+        if valhalla[i].fitness >= valhalla[parent1].fitness:
+            parent1 = i
 
-    return (parent1, parent2)
+    for j in range(TOTAL_POPULATION):
+        if j != parent1:
+            if valhalla[j].fitness >= valhalla[parent2].fitness:
+                parent2 = j
+
+    return (valhalla[parent1], valhalla[parent2])
 
 def crossover_parents(parent1, parent2):
     weight1 = parent1.brain.get_weights()
@@ -334,12 +360,14 @@ def model_mutate(weights):
             if( random.uniform(0,1) > .85):
                 change = random.uniform(-.5,.5)
                 weights[i][j] += change
+                print('model mutaed once')
                 
     return weights   
 
 def game_over():
     global highest_fitness
     global best_weights
+    global generation
     updated = False
     for bird in valhalla:
         if (bird.fitness >= highest_fitness):
@@ -347,14 +375,20 @@ def game_over():
             highest_fitness = bird.fitness
             best_weights = bird.brain.get_weights()
 
+    print('highest_fitness = ', highest_fitness)
+
+
     parent1, parent2 = get_the_fittest_parents()
+    print('last_parent_fitness = ', parent1.fitness)
     new_weights = []
     for i in range(TOTAL_POPULATION//2):
         cross_over_weights = crossover_parents(parent1, parent2)
-        if updated == False:
-            cross_over_weights[1] = best_weights
+        
         new_weights.append(model_mutate(cross_over_weights[0]))
         new_weights.append(model_mutate(cross_over_weights[1]))
+
+        if updated == False:
+            new_weights[-1] = best_weights
     
     new_gen_birds = []
     for i in range(len(new_weights)):
@@ -362,6 +396,7 @@ def game_over():
         new_gen_bird.brain.set_weights(new_weights[i])
         new_gen_birds.append(new_gen_bird)
 
+    generation += 1
     main(new_gen_birds) 
 
 

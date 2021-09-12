@@ -15,11 +15,12 @@ valhalla = []
 highest_fitness = -1
 best_weights = []
 generation = 1
+high_score = 0
 
 FPS = 60
 WIN_WIDTH = 800
-WIN_HEIGHT = 900
-PIPE_SEPARATION = 400
+WIN_HEIGHT = 800
+PIPE_SEPARATION = 600
 BASE_HEIGHT = WIN_HEIGHT - 80
 
 BIRD_IMGS = [
@@ -151,8 +152,8 @@ class Bird:
         return pygame.mask.from_surface(self.img)
 
 class Pipe:
-    GAP = 190
-    VEL = 10
+    GAP = 200
+    VEL = 5
 
     def __init__(self, x):
         self.x = x
@@ -166,7 +167,7 @@ class Pipe:
         self.set_height()
 
     def set_height(self):
-        self.height = random.randrange(50, 500)
+        self.height = random.randrange(50, 450)
         self.top = self.height - self.PIPE_TOP.get_height()
         self.bottom = self.height + self.GAP
 
@@ -219,6 +220,10 @@ class Base:
 
 def draw_window(win, birds, pipes, base, score):
     global generation
+    global high_score
+    if (score > high_score):
+        high_score = score
+
     win.blit(BG_IMG, (0, 0))
 
     for pipe in pipes:
@@ -233,6 +238,8 @@ def draw_window(win, birds, pipes, base, score):
     text = STAT_FONT.render("Gen: "+str(generation), 1, (255,255,255))
     win.blit(text, (10, 40))
 
+    text = STAT_FONT.render("High Score: "+str(high_score), 1, (255,255,255))
+    win.blit(text, (10, 80))
 
     base.draw(win)
 
@@ -256,7 +263,7 @@ def handle_player_actions(bird, keys_pressed):
 def main(birds):
     global valhalla
     base = Base(BASE_HEIGHT)
-    pipes = [Pipe(1200), Pipe(1200+PIPE_SEPARATION)]
+    pipes = [Pipe(900), Pipe(900+PIPE_SEPARATION)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
 
@@ -327,6 +334,7 @@ def main(birds):
 
 def get_the_fittest_parents():
     global valhalla
+    return [valhalla[-1], valhalla[-2]]
     parent1 = random.randint(0,TOTAL_POPULATION-1)
     parent2 = random.randint(0,TOTAL_POPULATION-1)
     for i in range(TOTAL_POPULATION):
@@ -337,6 +345,7 @@ def get_the_fittest_parents():
         if j != parent1:
             if valhalla[j].fitness >= valhalla[parent2].fitness:
                 parent2 = j
+    print('Fittest parent index = ', [parent1, parent2])            
 
     return (valhalla[parent1], valhalla[parent2])
 
@@ -360,7 +369,7 @@ def model_mutate(weights):
             if( random.uniform(0,1) > .85):
                 change = random.uniform(-.5,.5)
                 weights[i][j] += change
-                print('model mutaed once')
+                # print('model mutaed once')
                 
     return weights   
 
